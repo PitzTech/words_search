@@ -1,18 +1,9 @@
-CC = mpicc
+# Compiler and flags
+MPICC = mpicc
 CFLAGS = -Wall -Wextra -O3
-LDFLAGS = -lm
-
-# Directories
-BUILD_DIR = build
-SRC_DIR = .
-
-# Source files
-SRCS = main.c grid.c search.c file_io.c mpi_handler.c output.c debug.c constants.c
-OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o)
-HEADERS = $(wildcard *.h)
 
 # Program name
-PROG = $(BUILD_DIR)/word_search
+PROG = word_search
 
 # Default number of processes
 NP ?= 4
@@ -23,23 +14,18 @@ INPUT ?= puzzle.txt
 # Timing test process counts
 TIME_TESTS ?= 1 2 4 8
 
-# Create build directory
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
-
-# Link the program
-$(PROG): $(OBJS)
-	$(CC) $(OBJS) -o $(PROG) $(LDFLAGS)
-
-# Compile source files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
+# Build targets
 all: $(PROG)
 
+# Compile the program
+$(PROG): $(PROG).c
+	$(MPICC) $(CFLAGS) -o $(PROG) $(PROG).c
+
+# Run the program with default settings
 run: $(PROG)
 	mpirun -np $(NP) ./$(PROG) < $(INPUT)
 
+# Run timing tests with different process counts
 time-test: $(PROG)
 	@echo "Running timing tests..."
 	@for n in $(TIME_TESTS); do \
@@ -47,19 +33,22 @@ time-test: $(PROG)
 		mpirun -np $$n ./$(PROG) < $(INPUT); \
 	done
 
+# Run with valgrind for memory checking
 memcheck: $(PROG)
 	mpirun -np $(NP) valgrind --leak-check=full ./$(PROG) < $(INPUT)
 
+# Clean build files
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -f $(PROG)
 
+# Help target
 help:
 	@echo "Available targets:"
 	@echo "  make all       - Build the program (default)"
 	@echo "  make run      - Run the program"
 	@echo "  make time-test- Run timing tests with different process counts"
 	@echo "  make memcheck - Run with valgrind memory checker"
-	@echo "  make clean    - Remove build directory"
+	@echo "  make clean    - Remove built program"
 	@echo ""
 	@echo "Variables:"
 	@echo "  NP=X          - Set number of processes (default: 4)"
@@ -70,4 +59,4 @@ help:
 	@echo "  make run NP=8 INPUT=custom_puzzle.txt"
 	@echo "  make time-test TIME_TESTS='1 2 4 8 16'"
 
-.PHONY: all run time-test memcheck clean help $(BUILD_DIR)
+.PHONY: all run time-test memcheck clean help
