@@ -75,13 +75,11 @@ void Grid_destroy(Grid* grid);
 bool Grid_isValidPosition(const Grid* grid, int row, int col);
 void Grid_highlightWord(Grid* grid, const WordPosition pos);
 void Grid_print(const Grid* grid);
-
-WordPosition* WordPosition_create(int startRow, int startCol, int endRow, int endCol, const char* word);
+static int countTokens(const char* str);
 Grid* readPuzzleFromFile(void);
 void readWordsFromFile(char words[][MAX_WORD_LENGTH], int* numWords);
 bool searchWordInDirection(const Grid* grid, int startRow, int startCol, Direction dir, const char* word, WordPosition* pos);
 void searchWordParallel(const Grid* grid, const char* word, int startRow, int endRow, WordPosition* positions, int* count);
-static int countTokens(const char* str);
 
 // Grid functions implementation
 Grid* Grid_create(int rows, int cols) {
@@ -143,7 +141,6 @@ void Grid_highlightWord(Grid* grid, const WordPosition pos) {
     int col = pos.startCol;
     int len = strlen(pos.word);
 
-    // Calculate direction
     int drow = (pos.endRow - pos.startRow + grid->rows) % grid->rows;
     int dcol = (pos.endCol - pos.startCol + grid->cols) % grid->cols;
 
@@ -177,6 +174,7 @@ void Grid_print(const Grid* grid) {
     }
 }
 
+// Search functions implementation
 bool searchWordInDirection(const Grid* grid, int startRow, int startCol,
                          Direction dir, const char* word, WordPosition* pos) {
     int len = strlen(word);
@@ -222,6 +220,7 @@ void searchWordParallel(const Grid* grid, const char* word, int startRow, int en
     }
 }
 
+// File reading helper function
 static int countTokens(const char* str) {
     int count = 0;
     char* copy = strdup(str);
@@ -236,6 +235,7 @@ static int countTokens(const char* str) {
     return count;
 }
 
+// File reading functions implementation
 Grid* readPuzzleFromFile(void) {
     char** lines = NULL;
     int capacity = INITIAL_GRID_CAPACITY;
@@ -320,11 +320,17 @@ void readWordsFromFile(char words[][MAX_WORD_LENGTH], int* numWords) {
     }
 }
 
+// Main function
 int main(int argc, char** argv) {
     int rank, size;
+    double start_time, end_time;
+
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    // Start timing
+    start_time = MPI_Wtime();
 
     if (rank == 0) {
         // Master process reads input
@@ -351,7 +357,7 @@ int main(int argc, char** argv) {
         }
         printf("\n\n");
 
-        // Broadcast data to all processes
+        // Broadcast grid dimensions and data
         MPI_Bcast(&grid->rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(&grid->cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
         for (int i = 0; i < grid->rows; i++) {
@@ -401,11 +407,16 @@ int main(int argc, char** argv) {
                    allPositions[i].endCol);
         }
 
+        // Print execution time
+        end_time = MPI_Wtime();
+        printf("\nExecution time: %.4f seconds\n", end_time - start_time);
+        printf("Using %d processes\n", size);
+
         // Cleanup
         free(allPositions);
         free(counts);
         Grid_destroy(grid);
-} else {
+    } else {
         // Worker processes
         int rows, cols, numWords;
         MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);

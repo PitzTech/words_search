@@ -5,6 +5,7 @@ A high-performance C program that solves word search puzzles using parallel proc
 ## Features
 
 - Parallel processing using MPI for improved performance
+- Performance timing and benchmarking
 - Supports all 8 directions for word search:
   ```
   Up            (-1,  0)
@@ -96,6 +97,12 @@ make run INPUT=custom_puzzle.txt
 # Run with both custom processes and input
 make run NP=6 INPUT=custom_puzzle.txt
 
+# Run performance timing tests
+make time-test
+
+# Run custom timing tests
+make time-test TIME_TESTS='1 2 4 8 16'
+
 # Check for memory leaks
 make memcheck
 
@@ -111,10 +118,12 @@ make help
 - `NP`: Number of processes (default: 4)
 - `INPUT`: Input file path (default: puzzle.txt)
 - `CFLAGS`: Compiler flags (-Wall -Wextra -O3)
+- `TIME_TESTS`: Process counts for timing tests (default: 1 2 4 8)
 
 ## Output Format
 
 The program outputs:
+
 1. Grid dimensions and word list:
 ```
 Your grid dimensions are X columns x Y rows
@@ -135,6 +144,40 @@ word2: (row3,col3) to (row4,col4)
 ...
 ```
 
+4. Performance metrics:
+```
+Execution time: X.XXXX seconds
+Using N processes
+```
+
+## Performance Testing
+
+The program includes built-in performance timing:
+
+1. Basic timing:
+```bash
+make run
+# Shows execution time for single run
+```
+
+2. Comparative timing tests:
+```bash
+make time-test
+# Runs tests with 1, 2, 4, and 8 processes
+```
+
+3. Custom timing tests:
+```bash
+make time-test TIME_TESTS='1 2 4 8 16 32'
+# Tests with specified number of processes
+```
+
+Performance considerations:
+- Optimal process count typically matches CPU core count
+- Grid size affects optimal process distribution
+- Large grids benefit more from parallelization
+- Small grids may see overhead with too many processes
+
 ## Error Handling
 
 The program handles various errors:
@@ -149,6 +192,8 @@ For best performance:
 1. Use number of processes (NP) matching your CPU cores
 2. Compile with optimization (-O3 flag, included in Makefile)
 3. Ensure input file is properly formatted
+4. Consider grid size when choosing process count
+5. Monitor execution times to find optimal configuration
 
 ## Limitations
 
@@ -205,6 +250,12 @@ typedef struct {
 3. If memory leaks occur:
    ```bash
    make memcheck
+   ```
+
+4. If performance is poor:
+   ```bash
+   # Run timing tests to find optimal process count
+   make time-test
    ```
 
 ## Contributing
