@@ -26,6 +26,10 @@ HTML ?=
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
+# Create exports directory
+$(EXPORT_DIR):
+	mkdir -p $(EXPORT_DIR)
+
 # Link the program
 $(PROG): $(OBJS)
 	$(CC) $(OBJS) -o $(PROG) $(LDFLAGS)
@@ -35,10 +39,6 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 all: $(PROG)
-
-# Add creation of export directory
-$(EXPORT_DIR):
-	mkdir -p $(EXPORT_DIR)
 
 # Main run target with output options
 run: $(PROG) $(EXPORT_DIR)
