@@ -1,139 +1,167 @@
-// word_search_generator.c
-// This will help generate the large puzzle
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <ctype.h>
 
-#define GRID_SIZE 100
-#define MAX_WORDS 25
-#define MAX_WORD_LENGTH 50
+#define DIRECTIONS_COUNT 8
 
 typedef struct {
-    char grid[GRID_SIZE][GRID_SIZE];
-    char words[MAX_WORDS][MAX_WORD_LENGTH];
-    int wordCount;
-} Puzzle;
+    int dx;
+    int dy;
+    char *name;
+} DirectionVector;
 
-// Direction vectors for all 8 directions
-const int dx[] = {-1, -1, -1, 0, 1, 1, 1, 0};
-const int dy[] = {-1, 0, 1, 1, 1, 0, -1, -1};
+const DirectionVector DIRECTION_VECTORS[DIRECTIONS_COUNT] = {
+    {-1,  0, "UP"},
+    { 1,  0, "DOWN"},
+    { 0, -1, "LEFT"},
+    { 0,  1, "RIGHT"},
+    {-1, -1, "UP_LEFT"},
+    {-1,  1, "UP_RIGHT"},
+    { 1, -1, "DOWN_LEFT"},
+    { 1,  1, "DOWN_RIGHT"}
+};
 
-void initGrid(Puzzle* puzzle) {
-    // Initialize with random lowercase letters
-    for(int i = 0; i < GRID_SIZE; i++) {
-        for(int j = 0; j < GRID_SIZE; j++) {
-            puzzle->grid[i][j] = 'a' + (rand() % 26);
+// Function prototypes
+void initializeGrid(char **grid, int height, int width);
+void fillGridWithRandomChars(char **grid, int height, int width);
+void printGridToFile(FILE *file, char **grid, int height, int width);
+int placeWord(char **grid, int height, int width, const char *word);
+void wrapAround(int *x, int *y, int height, int width);
+int canPlaceWord(char **grid, int height, int width, const char *word, int startX, int startY, int dirIndex);
+void placeWordInDirection(char **grid, int height, int width, const char *word, int startX, int startY, int dirIndex);
+
+int main() {
+    int height = 100;
+    int width = 100;
+    char *words[] = {"algoritmos", "bubblesort", "quicksort", "mergesort", "arvore", "openmp", "prova", "teste"};
+    int wordCount = sizeof(words) / sizeof(words[0]);
+
+    printf("Starting word search puzzle generation...\n");
+
+    // Allocate grid memory
+    printf("Allocating memory for grid...\n");
+    char **grid = (char **)malloc(height * sizeof(char *));
+    for (int i = 0; i < height; i++) {
+        grid[i] = (char *)malloc(width * sizeof(char));
+    }
+
+    // Initialize grid with '.'
+    printf("Initializing grid...\n");
+    initializeGrid(grid, height, width);
+
+    // Seed random generator
+    printf("Seeding random number generator...\n");
+    srand(time(NULL));
+
+    // Place words in the grid
+    printf("Placing words in the grid...\n");
+    for (int i = 0; i < wordCount; i++) {
+        printf("Placing word: %s\n", words[i]);
+        if (!placeWord(grid, height, width, words[i])) {
+            printf("Failed to place word: %s\n", words[i]);
+        }
+    }
+
+    // Fill the grid with random letters
+    printf("Filling empty cells with random characters...\n");
+    fillGridWithRandomChars(grid, height, width);
+
+    // Write grid and words to a file
+    printf("Writing puzzle to file 'generated_puzzle.txt'...\n");
+    FILE *file = fopen("generated_puzzle.txt", "w");
+    if (file == NULL) {
+        perror("Error opening file");
+        return EXIT_FAILURE;
+    }
+
+    printGridToFile(file, grid, height, width);
+
+    fprintf(file, "\nPalavras:\n");
+    for (int i = 0; i < wordCount; i++) {
+        fprintf(file, "%s%s", words[i], i < wordCount - 1 ? ", " : "\n");
+    }
+
+    fclose(file);
+    printf("Puzzle written to 'generated_puzzle.txt'.\n");
+
+    // Free grid memory
+    printf("Freeing allocated memory...\n");
+    for (int i = 0; i < height; i++) {
+        free(grid[i]);
+    }
+    free(grid);
+
+    printf("Finished word search puzzle generation.\n");
+    return 0;
+}
+
+void initializeGrid(char **grid, int height, int width) {
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            grid[i][j] = '.';
         }
     }
 }
 
-int canPlaceWord(Puzzle* puzzle, const char* word, int row, int col, int dirIndex) {
-    int len = strlen(word);
-    int x = row, y = col;
-
-    for(int i = 0; i < len; i++) {
-        int newX = (x + GRID_SIZE) % GRID_SIZE;
-        int newY = (y + GRID_SIZE) % GRID_SIZE;
-
-        if(puzzle->grid[newX][newY] != 'a' + (rand() % 26) &&
-           puzzle->grid[newX][newY] != word[i]) {
-            return 0;
+void fillGridWithRandomChars(char **grid, int height, int width) {
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            if (grid[i][j] == '.') {
+                grid[i][j] = 'a' + rand() % 26;
+            }
         }
-        x += dx[dirIndex];
-        y += dy[dirIndex];
+    }
+}
+
+void printGridToFile(FILE *file, char **grid, int height, int width) {
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            fprintf(file, "%c ", grid[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+}
+
+void wrapAround(int *x, int *y, int height, int width) {
+    *x = (*x + height) % height;
+    *y = (*y + width) % width;
+}
+
+int canPlaceWord(char **grid, int height, int width, const char *word, int startX, int startY, int dirIndex) {
+    int x = startX, y = startY;
+    for (int i = 0; word[i] != '\0'; i++) {
+        wrapAround(&x, &y, height, width);
+        if (grid[x][y] != '.' && grid[x][y] != word[i]) {
+            return 0; // Conflict
+        }
+        x += DIRECTION_VECTORS[dirIndex].dx;
+        y += DIRECTION_VECTORS[dirIndex].dy;
     }
     return 1;
 }
 
-void placeWord(Puzzle* puzzle, const char* word, int row, int col, int dirIndex) {
-    int len = strlen(word);
-    int x = row, y = col;
-
-    for(int i = 0; i < len; i++) {
-        int newX = (x + GRID_SIZE) % GRID_SIZE;
-        int newY = (y + GRID_SIZE) % GRID_SIZE;
-        puzzle->grid[newX][newY] = word[i];
-        x += dx[dirIndex];
-        y += dy[dirIndex];
+void placeWordInDirection(char **grid, int height, int width, const char *word, int startX, int startY, int dirIndex) {
+    int x = startX, y = startY;
+    for (int i = 0; word[i] != '\0'; i++) {
+        wrapAround(&x, &y, height, width);
+        grid[x][y] = word[i];
+        x += DIRECTION_VECTORS[dirIndex].dx;
+        y += DIRECTION_VECTORS[dirIndex].dy;
     }
 }
 
-void generatePuzzle(Puzzle* puzzle) {
-    // List of words to place
-    const char* wordList[] = {
-        "parallelism", "multithreading", "concurrency", "optimization",
-        "recursion", "synchronization", "hashtable", "linkedlist",
-        "binarytree", "redblacktree", "arraylist", "binaryheap",
-        "quicksort", "mergesort", "heapsort", "bubblesort",
-        "insertionsort", "selectionsort", "radixsort", "virtualization",
-        "compilation", "polymorphism", "encapsulation", "inheritance",
-        "abstraction"
-    };
+int placeWord(char **grid, int height, int width, const char *word) {
+    int attempts = 1000; // Limit attempts to avoid infinite loops
+    while (attempts--) {
+        int startX = rand() % height;
+        int startY = rand() % width;
+        int dirIndex = rand() % DIRECTIONS_COUNT;
 
-    puzzle->wordCount = sizeof(wordList) / sizeof(wordList[0]);
-
-    // Copy words to puzzle
-    for(int i = 0; i < puzzle->wordCount; i++) {
-        strcpy(puzzle->words[i], wordList[i]);
-    }
-
-    // Initialize grid with random letters
-    initGrid(puzzle);
-
-    // Place each word
-    for(int i = 0; i < puzzle->wordCount; i++) {
-        int placed = 0;
-        int attempts = 0;
-
-        while(!placed && attempts < 100) {
-            int row = rand() % GRID_SIZE;
-            int col = rand() % GRID_SIZE;
-            int dir = rand() % 8;
-
-            if(canPlaceWord(puzzle, wordList[i], row, col, dir)) {
-                placeWord(puzzle, wordList[i], row, col, dir);
-                placed = 1;
-            }
-            attempts++;
+        if (canPlaceWord(grid, height, width, word, startX, startY, dirIndex)) {
+            placeWordInDirection(grid, height, width, word, startX, startY, dirIndex);
+            return 1; // Success
         }
     }
-}
-
-void printPuzzle(const Puzzle* puzzle, const char* filename) {
-    FILE* file = fopen(filename, "w");
-    if(!file) {
-        printf("Error opening file\n");
-        return;
-    }
-
-    // Print grid
-    for(int i = 0; i < GRID_SIZE; i++) {
-        for(int j = 0; j < GRID_SIZE; j++) {
-            fprintf(file, "%c ", puzzle->grid[i][j]);
-        }
-        fprintf(file, "\n");
-    }
-
-    // Print word list
-    fprintf(file, "\nPalavras:\n");
-    for(int i = 0; i < puzzle->wordCount; i++) {
-        fprintf(file, "%s", puzzle->words[i]);
-        if(i < puzzle->wordCount - 1) {
-            fprintf(file, ", ");
-        }
-    }
-    fprintf(file, "\n");
-
-    fclose(file);
-}
-
-int main() {
-    srand(time(NULL));
-    Puzzle puzzle;
-    generatePuzzle(&puzzle);
-    printPuzzle(&puzzle, "large_puzzle.txt");
-    return 0;
+    return 0; // Failed to place the word
 }

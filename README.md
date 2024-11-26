@@ -1,27 +1,19 @@
-# Parallel Word Search Puzzle Solver
+# Parallel Word Search Solver
 
 A high-performance C program that solves word search puzzles using parallel processing with MPI (Message Passing Interface). The program can find words in any direction, including diagonals and wrapping around the edges of the puzzle.
 
-## Features
+## Documentation
+- [How it Works](./HOW_IT_WORKS.md) - Detailed explanation of the algorithm and parallelization strategy
+- [Generator](./GENERATOR.md) - Documentation for the puzzle generator tool
 
-- Parallel processing using MPI for improved performance
-- Performance timing and benchmarking
-- Supports all 8 directions for word search:
-  ```
-  Up            (-1,  0)
-  Down          ( 1,  0)
-  Left          ( 0, -1)
-  Right         ( 0,  1)
-  Up-Left       (-1, -1)
-  Up-Right      (-1,  1)
-  Down-Left     ( 1, -1)
-  Down-Right    ( 1,  1)
-  ```
-- Words can wrap around edges
+## Features
+- Parallel processing using MPI
+- Support for all 8 directions (horizontal, vertical, diagonal)
+- Words can wrap around grid edges
 - Automatic grid size detection
 - Case-insensitive word matching
-- Color-coded output highlighting found words
-- Reports exact positions of found words
+- Color-coded output highlighting
+- Performance metrics
 
 ## Project Structure
 
