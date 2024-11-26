@@ -21,7 +21,7 @@ void syncHighlightedArrays(Grid* grid, ProcessResults* allResults, int size) {
     }
 }
 
-void handleMasterProcess(int rank, int size) {
+void handleMasterProcess(int rank, int size, OutputOptions* options) {
     double startTime = MPI_Wtime();
 
     // Initialize master process and read input
@@ -78,6 +78,11 @@ void handleMasterProcess(int rank, int size) {
     printf("\nSearch Results:\n");
     printf("--------------\n");
     Grid_print(grid);
+
+    // Export results if output file is specified
+    if (options && options->outputFile) {
+        Grid_exportToFile(grid, options->outputFile, options->useHTML);
+    }
 
     printf("\nFound Words:\n");
     int totalFound = 0;

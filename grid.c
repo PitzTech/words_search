@@ -159,3 +159,93 @@ void Grid_print(const Grid* grid) {
         printf("\n");
     }
 }
+
+void Grid_exportToFile(const Grid* grid, const char* filename, bool useHTML) {
+    // Create exports directory path
+    const char* export_dir = "exports";
+
+    // Calculate file path and name
+    char* filepath;
+    if (useHTML) {
+        // Add .html if not present
+        if (strstr(filename, ".html") == NULL) {
+            filepath = malloc(strlen(export_dir) + strlen(filename) + 8); // +8 for //.html\0
+            sprintf(filepath, "%s/%s.html", export_dir, filename);
+        } else {
+            filepath = malloc(strlen(export_dir) + strlen(filename) + 2); // +2 for /\0
+            sprintf(filepath, "%s/%s", export_dir, filename);
+        }
+    } else {
+        // Add .txt if not present
+        if (strstr(filename, ".txt") == NULL) {
+            filepath = malloc(strlen(export_dir) + strlen(filename) + 7); // +7 for //.txt\0
+            sprintf(filepath, "%s/%s.txt", export_dir, filename);
+        } else {
+            filepath = malloc(strlen(export_dir) + strlen(filename) + 2); // +2 for /\0
+            sprintf(filepath, "%s/%s", export_dir, filename);
+        }
+    }
+
+    FILE* file = fopen(filepath, "w");
+    if (!file) {
+        fprintf(stderr, "Error: Could not open file %s for writing\n", filepath);
+        free(filepath);
+        return;
+    }
+
+    if (useHTML) {
+        fprintf(file, "<!DOCTYPE html>\n"
+                     "<html>\n"
+                     "<head>\n"
+                     "    <title>Word Search Results</title>\n"
+                     "    <style>\n"
+                     "        body {\n"
+                     "            background-color: black;\n"
+                     "            color: white;\n"
+                     "            font-family: monospace;\n"
+                     "        }\n"
+                     "        pre {\n"
+                     "            margin: 20px;\n"
+                     "        }\n"
+                     "        .found-word {\n"
+                     "            color: #00ff00;\n"
+                     "        }\n"
+                     "    </style>\n"
+                     "</head>\n"
+                     "<body>\n<pre>\n");
+    }
+
+    // Print column numbers
+    fprintf(file, "    ");
+    for (int j = 0; j < grid->cols; j++) {
+        fprintf(file, "%2d ", j);
+    }
+    fprintf(file, "\n");
+
+    // Print grid
+    for (int i = 0; i < grid->rows; i++) {
+        fprintf(file, "%2d  ", i);
+        for (int j = 0; j < grid->cols; j++) {
+            if (grid->highlighted[i][j] != ' ') {
+                if (useHTML) {
+                    fprintf(file, "<span class=\"found-word\">%c</span>  ",
+                           grid->letters[i][j]);
+                } else {
+                    fprintf(file, "%s%c%s  ", COLORS.green,
+                           grid->letters[i][j], COLORS.reset);
+                }
+            } else {
+                fprintf(file, "%c  ", grid->letters[i][j]);
+            }
+        }
+        fprintf(file, "\n");
+    }
+
+    if (useHTML) {
+        fprintf(file, "</pre>\n</body>\n</html>\n");
+    }
+
+    fclose(file);
+    free(filepath);
+    printf("\nResults exported to: %s\n", filepath);
+}

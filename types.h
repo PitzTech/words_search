@@ -1,6 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <stdbool.h>
+
 #define MAX_WORD_LENGTH 50
 #define MAX_WORDS 100
 #define MAX_LINE_LENGTH 2000
@@ -32,6 +34,8 @@ typedef struct {
 typedef struct {
     const char* green;
     const char* reset;
+    const char* html_green_start;
+    const char* html_green_end;
 } ColorCodes;
 
 typedef struct {
@@ -59,5 +63,10 @@ typedef struct {
     int start;
     int end;
 } RowRange;
+
+typedef struct {
+    char* outputFile;   // Output file path
+    bool useHTML;       // HTML output flag
+} OutputOptions;
 
 #endif // TYPES_H

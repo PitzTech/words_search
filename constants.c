@@ -2,7 +2,9 @@
 
 const ColorCodes COLORS = {
     .green = "\033[1;32m",
-    .reset = "\033[0m"
+    .reset = "\033[0m",
+    .html_green_start = "<span style=\"color: green\">",
+    .html_green_end = "</span>"
 };
 
 const DirectionVector DIRECTION_VECTORS[DIRECTIONS_COUNT] = {
